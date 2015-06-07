@@ -16,3 +16,6 @@ EE takes in your dataset, and a model specification.  Most of the grunt work of 
 * Parallelism a must, connect to a sage cloud?
     * Just use sage to begin with?
 * Pull up some old grad school problems as examples (SEM I & II from Mannering)
+* Should there be a way to mark certain variables as dependent, so they shouldn't appear together in the model?  Or try to statistically determine that
+* Based on some general statistics of the variables, determine best ones to start with/what transformations are viable?
+    * i.e. don't do a log on a negative variable
