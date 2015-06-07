@@ -13,6 +13,9 @@ read = r.r['read.csv']
 data = read(filename, head=True, sep = ",")
 var_names = data.colnames
 
+# extract useful information from model
+rsumm = r.r['summary']
+
 # get a particular column
 data.rx('num_delay')
 
@@ -33,4 +36,10 @@ test_form = build_formula('num_delay', var_names[5:9])
 
 model_res = model_func(formula = test_form, data = data)
 
+summ_res = rsumm(model_res)
 
+coeff_idx = summ_res.names.index('coefficients')
+
+my_coeff = summ_res[coeff_idx]
+
+# need to split into proper matrix
