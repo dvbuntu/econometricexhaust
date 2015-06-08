@@ -1,4 +1,5 @@
 import rpy2.robjects as r
+import numpy as np
 
 # evaluate some r code
 r.r['pi']
@@ -26,20 +27,41 @@ model_func = r.r['glm']
 def build_formula(dependent_var, independent_vars):
     '''Build string describing what we are modeling...this will be built each
     time in exhaust'''
+    # Copy in the variables
+    my_ind_vars = list(independent_vars[:])
+    # Check for intercept variable, R makes you add things to remove it..
+    if '1' not in my_ind_vars and 1 not in my_ind_vars:
+        my_ind_vars += ['0']
     # Add together strings of vars, if appended a 1, include as string
-    ind_vars = ' + '.join(map(str,independent_vars))
+    ind_vars = ' + '.join(map(str,my_ind_vars))
     # All together now!
     formula = '{0} ~ {1}'.format(dependent_var,ind_vars)
     return formula
 
 test_form = build_formula('num_delay', var_names[5:9])
 
+# do the model
 model_res = model_func(formula = test_form, data = data)
-
 summ_res = rsumm(model_res)
 
-coeff_idx = summ_res.names.index('coefficients')
+# grab the coefficients and their significances
+def get_pvals(summ):
+    '''Get the probabilities of the coefficients being random.'''
+    coeff_idx = summ.names.index('coefficients')
+    my_coeff = summ[coeff_idx]
+    coeff_arr = np.array(my_coeff)
+    p_col = my_coeff.colnames.index('Pr(>|t|)')
+    pvals = coeff_arr[:,p_col]
+    return pvals
 
-my_coeff = summ_res[coeff_idx]
+model_pvals = get_pvals(summ_res)
+# note that an intercept is the first one, will have to check which var is where
+# have to handle the intercept special and explicitly turn it off
 
-# need to split into proper matrix
+# test with intercept
+test_int = build_formula('num_delay', list(var_names[5:9]) + ['1'])
+model_int = model_func(formula = test_int, data = data)
+summ_int = rsumm(model_int)
+int_pvals = get_pvals(summ_int)
+
+
