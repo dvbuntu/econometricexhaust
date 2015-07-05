@@ -1,12 +1,23 @@
+import argparse
 import rpy2.robjects as r
 import numpy as np
 import itertools
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', '--filename', help="data file")
+parser.add_argument('-v', '--verbose', help="turn on verbose mode", action="store_true", default=False)
+parser.add_argument('-t', '--thresh', help="probability threshold for variable significance", type=float, default=0.05)
+parser.add_argument('-m', '--model', help="R model type (lm, glm, etc)")
+args = parser.parse_args()
 
 # evaluate some r code
 r.r['pi']
 
 # our data file
-filename = 'data/Ex11-3.txt'
+if args.filename:
+    filename = args.filename
+else:
+    filename = 'data/Ex11-3.txt'
 
 # R function to read data
 read = r.r['read.csv']
@@ -77,24 +88,24 @@ def check_model(dep_var, ivars, data, model = model_func):
     form = build_formula(dep_var, ivars)
     m = model(formula = form, data = data)
     summary = rsumm(m)
-    return get_pvals(summary), get_aic(summary)
+    return get_pvals(summary), get_aic(summary), summary
 
 # typical academic threshold for significance
-thresh = 0.05
+thresh = args.thresh
 dep_var = var_names[1]
 ind_vars = list(var_names[5:9]) + ['1']
 
-debug = True
+debug = args.verbose
 
 good_models = []
 for num_vars in range(1,len(ind_vars)):
     for ivars in itertools.combinations(ind_vars,num_vars):
         if debug:
             print(ivars)
-        var_probs, score = check_model(dep_var, ivars, data)
+        var_probs, score, summ = check_model(dep_var, ivars, data)
         # if all vars are significant, add to pile of good models
         if True not in map(lambda x: x > thresh, var_probs): 
-            good_models.append((ivars,var_probs,score)) 
+            good_models.append((ivars,var_probs,score,summ)) 
 
 # sort decent models by AIC
 sorted_models = sorted(good_models, key=lambda x: x[2], reverse = True)
