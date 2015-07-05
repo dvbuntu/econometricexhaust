@@ -96,3 +96,5 @@ for num_vars in range(1,len(ind_vars)):
         if True not in map(lambda x: x > thresh, var_probs): 
             good_models.append((ivars,var_probs,score)) 
 
+# sort decent models by AIC
+sorted_models = sorted(good_models, key=lambda x: x[2], reverse = True)
