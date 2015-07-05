@@ -7,7 +7,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--filename', help="data file")
 parser.add_argument('-v', '--verbose', help="turn on verbose mode", action="store_true", default=False)
 parser.add_argument('-t', '--thresh', help="probability threshold for variable significance", type=float, default=0.05)
-parser.add_argument('-m', '--model', help="R model type (lm, glm, etc)")
+parser.add_argument('-m', '--model', help="R model type (lm, poisson, etc)", default='lm')
+parser.add_argument('--no_label', help="Flag for data without labels", action="store_true", default=False)
+parser.add_argument('-d', '--dependent_var', help="Dependent variable name or column")
+parser.add_argument('-s', '--field_separator', help="Character for separating fields", default=',')
+# this is non-trivial, see stack overflow for changing R record separator
+# parser.add_argument('-r', '--record_separator', help="Character for separating records", default='\n
 args = parser.parse_args()
 
 # evaluate some r code
@@ -23,8 +28,12 @@ else:
 read = r.r['read.csv']
 
 # read data into R object and grab column names
-data = read(filename, head=True, sep = ",")
-var_names = data.colnames
+if args.no_label:
+    data = read(filename, sep = ",")
+    var_names = ['x{0}'.format(i) for i in range(data.ncol)]
+else:
+    data = read(filename, head=True, sep = ",")
+    var_names = data.colnames
 
 # extract useful information from model
 rsumm = r.r['summary']
@@ -34,7 +43,12 @@ data.rx('num_delay')
 
 # R function to do the modeling, glm is poisson in this case
 # could be least squares, robust, nest logit, whatever
-model_func = r.r['glm']
+if args.model == 'lm':
+    model_func = r.r['lm']
+elif args.model == 'poisson':
+    model_func = r.r['glm']
+else:
+    raise NotImplementedError("{0} is not an R model I know".format(args.model))
 
 def build_formula(dependent_var, independent_vars):
     '''Build string describing what we are modeling...this will be built each
