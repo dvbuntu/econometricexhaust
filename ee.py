@@ -10,7 +10,7 @@ parser.add_argument('-t', '--thresh', help="probability threshold for variable s
 parser.add_argument('-m', '--model', help="R model type (lm, poisson, etc)", default='lm')
 parser.add_argument('--no_label', help="Flag for data without labels", action="store_true", default=False)
 parser.add_argument('-d', '--dependent_var', help="Dependent variable name or column")
-parser.add_argument('-i', '--independent_var', help="Independent variable name and/or column numbers.  Ranges acceptable (2,3-5,num_foo,8-12)")
+parser.add_argument('-i', '--independent_vars', help="Independent variable name and/or column numbers.  Ranges acceptable (2,3-5,num_foo,8-12)")
 parser.add_argument('--no_constant', help="Turn off constanst variable", action="store_true", default = False)
 parser.add_argument('-s', '--field_separator', help="Character for separating fields", default=',')
 # this is non-trivial, see stack overflow for changing R record separator
@@ -70,10 +70,13 @@ def get_pvals(summ):
     pvals = coeff_arr[:,p_col]
     return pvals
 
-def get_aic(summ):
+def get_aic(summ, m = None):
     '''Get the Akaike Information Criterion value from the model summary'''
-    aic_idx = summ.names.index('aic')
-    aic = summ[aic_idx][0]
+    if m:
+        aic = r.r['extractAIC'](m)[1]
+    else:
+        aic_idx = summ.names.index('aic')
+        aic = summ[aic_idx][0]
     return aic
 
 # stupid exhauster, don't pay attention to anything but pvals, keep only significant sets
@@ -82,28 +85,38 @@ def check_model(dep_var, ivars, data, model = model_func):
     form = build_formula(dep_var, ivars)
     m = model(formula = form, data = data)
     summary = rsumm(m)
-    return get_pvals(summary), get_aic(summary), summary
+    return get_pvals(summary), get_aic(summary,m), summary
 
 thresh = args.thresh
 
 # assume first column is dependent variable
-dep_var = args.dependent_var
+def parse_dep_vars(var_str, var_names):
+    digits = set('0123456789')
+    if set(var_str).issubset(digits):
+        dep_var = var_names[int(var_str)]
+    else:
+        dep_var = var_str
+    return dep_var
+
+dep_var = parse_dep_vars(args.dependent_var, var_names)
 dep_var_idx = var_names.index(dep_var)
 
 # pull out the independent variables of interest
-def parse_ind_vars(var_str, var_names):
+def parse_ind_vars(var_str, var_names, dep_var):
     digits = set('0123456789')
     my_vars = []
     elements = (x.split('-') for x in var_str.split(','))
     for e in elements:
-        if set(e[0]) in digits:
-            my_vars.extend([var_names[i] for i in range(e[0],e[-1] + 1)])
+        if set(e[0]).issubset(digits):
+            my_vars.extend([var_names[i] for i in range(int(e[0]),int(e[-1]) + 1)])
         else:
             my_vars.append(e)
+    if dep_var in my_vars:
+        raise ValueError('"{0}" cannot be both dependent and independent'.format(dep_var))
     return my_vars
 
-ind_vars = parse_ind_vars(args.independent_vars, var_names)
-if not no_constant:
+ind_vars = parse_ind_vars(args.independent_vars, var_names, dep_var)
+if not args.no_constant:
     ind_vars.append('1')
 
 debug = args.verbose
