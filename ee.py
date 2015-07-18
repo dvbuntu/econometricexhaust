@@ -10,13 +10,12 @@ parser.add_argument('-t', '--thresh', help="probability threshold for variable s
 parser.add_argument('-m', '--model', help="R model type (lm, poisson, etc)", default='lm')
 parser.add_argument('--no_label', help="Flag for data without labels", action="store_true", default=False)
 parser.add_argument('-d', '--dependent_var', help="Dependent variable name or column")
+parser.add_argument('-i', '--independent_var', help="Independent variable name and/or column numbers.  Ranges acceptable (2,3-5,num_foo,8-12)")
+parser.add_argument('--no_constant', help="Turn off constanst variable", action="store_true", default = False)
 parser.add_argument('-s', '--field_separator', help="Character for separating fields", default=',')
 # this is non-trivial, see stack overflow for changing R record separator
 # parser.add_argument('-r', '--record_separator', help="Character for separating records", default='\n
 args = parser.parse_args()
-
-# evaluate some r code
-r.r['pi']
 
 # our data file
 if args.filename:
@@ -37,9 +36,6 @@ else:
 
 # extract useful information from model
 rsumm = r.r['summary']
-
-# get a particular column
-data.rx('num_delay')
 
 # R function to do the modeling, glm is poisson in this case
 # could be least squares, robust, nest logit, whatever
@@ -64,12 +60,6 @@ def build_formula(dependent_var, independent_vars):
     formula = '{0} ~ {1}'.format(dependent_var,ind_vars)
     return formula
 
-test_form = build_formula('num_delay', var_names[5:9])
-
-# do the model
-model_res = model_func(formula = test_form, data = data)
-summ_res = rsumm(model_res)
-
 # grab the coefficients and their significances
 def get_pvals(summ):
     '''Get the probabilities of the coefficients being random.'''
@@ -86,16 +76,6 @@ def get_aic(summ):
     aic = summ[aic_idx][0]
     return aic
 
-model_pvals = get_pvals(summ_res)
-# note that an intercept is the first one, will have to check which var is where
-# have to handle the intercept special and explicitly turn it off
-
-# test with intercept
-test_int = build_formula('num_delay', list(var_names[5:9]) + ['1'])
-model_int = model_func(formula = test_int, data = data)
-summ_int = rsumm(model_int)
-int_pvals = get_pvals(summ_int)
-
 # stupid exhauster, don't pay attention to anything but pvals, keep only significant sets
 def check_model(dep_var, ivars, data, model = model_func):
     '''Model dep_var using the ivars and model_func.  Return the probabilities of the variable coefficients being random and some score (like AIC)'''
@@ -104,10 +84,27 @@ def check_model(dep_var, ivars, data, model = model_func):
     summary = rsumm(m)
     return get_pvals(summary), get_aic(summary), summary
 
-# typical academic threshold for significance
 thresh = args.thresh
-dep_var = var_names[1]
-ind_vars = list(var_names[5:9]) + ['1']
+
+# assume first column is dependent variable
+dep_var = args.dependent_var
+dep_var_idx = var_names.index(dep_var)
+
+# pull out the independent variables of interest
+def parse_ind_vars(var_str, var_names):
+    digits = set('0123456789')
+    my_vars = []
+    elements = (x.split('-') for x in var_str.split(','))
+    for e in elements:
+        if set(e[0]) in digits:
+            my_vars.extend([var_names[i] for i in range(e[0],e[-1] + 1)])
+        else:
+            my_vars.append(e)
+    return my_vars
+
+ind_vars = parse_ind_vars(args.independent_vars, var_names)
+if not no_constant:
+    ind_vars.append('1')
 
 debug = args.verbose
 
