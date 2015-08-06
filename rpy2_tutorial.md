@@ -1,5 +1,5 @@
 # R and Python, A Tale of Friendship
-R is a wonder statistical programming language.  Python is a great general purpose language with a module for just about everything (try `import antigravity`).  In fact, Python even has a module, `rpy2`, to join the two.  This guide will show you how to enjoy the best of both worlds.
+R is a wonderful statistical programming language.  Python is a great general purpose language with a module for just about everything (try `import antigravity`).  In fact, Python even has a module, `rpy2`, to join the two.  This guide will show you how to enjoy the best of both worlds.
 
 First, we have to load up `rpy2`.  If it's not available as a [package](https://www.archlinux.org/packages/community/x86_64/python-rpy2/) through your operating system, then you can install it with `pip install rpy2` (learn more about Python's package manager, `pip`, [here](https://docs.python.org/3/installing/)).  Now we can `import py2.robjects as r` in our Python script.  `r.r['foo']` then gives Python access to the R object, `foo`.  It might seem like an odd construction, but now `r` exposes all the power of R to Python!
 
@@ -47,7 +47,7 @@ offset_var = 1
 ind_data = list(range(num_data))
 dep_data = [coeff*i + random.randint(offset-offset_var,offset+offset_var) for i in ind_data]
 
-# Convert data to R, god of statistics
+# Convert data at the altar of R
 pdata = dict()
 pdata['X'] = r.FloatVector(ind_data)
 pdata['Y'] = r.FloatVector(dep_data)
