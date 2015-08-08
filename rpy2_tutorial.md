@@ -26,11 +26,10 @@ data = [0, 3.14/2, r.r['pi'], 3.14]
 # Reap what you have sown
 out = [rsin(d) for d in data]
 print(out)
-# [<FloatVector - Python:0x7f5a4704d108 / R:0x7f5a6a096e78>
-# [0.000000], <FloatVector - Python:0x7f5a4704d188 / R:0x7f5a6a096de8>
-# [1.000000], <FloatVector - Python:0x7f5a4704d208 / R:0x7f5a6a096d88>
-# [0.000000], <FloatVector - Python:0x7f5a4704d1c8 / R:0x7f5a6a096cf8>
-# [0.001593]]
+# [<FloatVector - Python:0x7f5a4704d108 / R:0x7f5a6a096e78> [0.000000], 
+#  <FloatVector - Python:0x7f5a4704d188 / R:0x7f5a6a096de8> [1.000000], 
+#  <FloatVector - Python:0x7f5a4704d208 / R:0x7f5a6a096d88> [0.000000], 
+#  <FloatVector - Python:0x7f5a4704d1c8 / R:0x7f5a6a096cf8> [0.001593]]
 ```
 
 Just as you can import R objects into Python space, `rpy2` can similarly translate Python objects into the R world.  For example, `r.FloatVector([0,1,2,3,4])` converts a short Python `list` into, shockingly, an R `FloatVector`.  You can create whole `DataFrame` objects from Python, allowing you to manipulate in Python, statistically analyze in R, and push the results back to Python.  Right tool for the right job.
@@ -47,7 +46,7 @@ offset_var = 1
 ind_data = list(range(num_data))
 dep_data = [coeff*i + random.randint(offset-offset_var,offset+offset_var) for i in ind_data]
 
-# Convert data at the altar of R
+# Convert into an R DataFrame for regression
 pdata = dict()
 pdata['X'] = r.FloatVector(ind_data)
 pdata['Y'] = r.FloatVector(dep_data)
@@ -59,10 +58,11 @@ pylm = r.r['lm']
 # Make a formula for the regression
 formula = 'Y ~ X + 1'
 
-# Run the regression
+# Run the regression with R
 m = pylm(formula = formula, data = data)
+TODO This is some R thing that makes sense? Setting things equal to themselves?
 
-# Take a look at results
+# Take a look at results with Python
 summary = r.r['summary'](m)
 print(summary)
 ```
